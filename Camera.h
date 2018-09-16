@@ -8,7 +8,6 @@
 #include <ostream>
 
 #include "Ray.h"
-#include "Distributions.h"
 
 Vector3f randomInUnitDisk();
 
@@ -85,7 +84,7 @@ public:
     Ray getRay(float s, float t){
         Vector3f rd = lensRaidus * randomInUnitDisk();
         Vector3f offset = u * rd.x() + v * rd.y();
-        float time = time0 + Distributions::zero_to_one.getRandFloat() * (time1 - time0);
+        float time = time0 + drand48() * (time1 - time0);
         return Ray(origin + offset,
                    lowerLeftCorner + s*horizontal + t*vertical - origin - offset,
                    time);

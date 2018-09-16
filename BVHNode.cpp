@@ -35,7 +35,7 @@ bool BVHNode::hit(const Ray &r, float tmin, float tmax, HitRecord &rec) const {
 }
 
 BVHNode::BVHNode(Hitable **l, int n, float time0, float time1) {
-    int axis = int(3 * Distributions::zero_to_one.getRandFloat() );
+    int axis = int(3 * drand48() );
     if (axis == 0)
         qsort(l, n, sizeof(Hitable*), boxXcmp);
     else if (axis == 1)

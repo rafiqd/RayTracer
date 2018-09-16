@@ -8,7 +8,6 @@
 #include "AABB.h"
 #include "Hitable.h"
 #include "Ray.h"
-#include "Distributions.h"
 
 int boxXcmp(const void *, const void *);
 int boxYcmp(const void *, const void *);

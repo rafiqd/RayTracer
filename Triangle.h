@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "Point3f.h"
-#include "Point2f.h"
 #include "Vector3f.h"
 #include "Geometry.h"
 
@@ -18,15 +17,15 @@ public:
     Point3f point1;
     Point3f point2;
     Point3f point3;
-    Point2f texture1;
-    Point2f texture2;
-    Point2f texture3;
+    Vector3f texture1;
+    Vector3f texture2;
+    Vector3f texture3;
     Vector3f normal1;
     Vector3f normal2;
     Vector3f normal3;
 
     Triangle(Point3f p1, Point3f p2, Point3f p3,
-             Point2f t1, Point2f t2, Point2f t3,
+             Vector3f t1, Vector3f t2, Vector3f t3,
              Vector3f n1, Vector3f n2, Vector3f n3):
             point1(p1), point2(p2), point3(p3),
             texture1(t1), texture2(t2), texture3(t3),

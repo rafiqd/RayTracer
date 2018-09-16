@@ -3,11 +3,10 @@
 //
 
 #include <cfloat>
-#include "Distributions.h"
 #include "ConstantMedium.h"
 
 bool ConstantMedium::hit(const Ray &r, float tMin, float tMax, HitRecord &rec) const {
-    bool db = Distributions::zero_to_one.getRandFloat() < 0.00001;
+    bool db = drand48() < 0.00001;
     db = false;
     HitRecord rec1, rec2;
     if( boundary->hit(r, -FLT_MAX, FLT_MAX, rec1)){
@@ -25,7 +24,7 @@ bool ConstantMedium::hit(const Ray &r, float tMin, float tMax, HitRecord &rec) c
             if (rec1.t < 0)
                 rec1.t = 0;
             float distanceInsideBoundary = (rec2.t - rec1.t) * r.direction().length();
-            float hitDistance = -(1/density) * logf(Distributions::zero_to_one.getRandFloat());
+            float hitDistance = -(1/density) * logf(drand48());
             if ( hitDistance < distanceInsideBoundary ) {
                 if (db) std::cerr << "hit_distance = " <<  hitDistance << "\n";
                 rec.t = rec1.t + hitDistance / r.direction().length();
