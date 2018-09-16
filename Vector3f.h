@@ -41,7 +41,7 @@ public:
     inline void make_unit_vector();
 
     friend inline std::ostream& operator<<(std::ostream &os, const Vector3f v){
-        return os << "V<" << v.x() << ", " << v.y() << ", " << v.z() << ">";
+        return os << v[0] << " " << v[1] << " " << v[2];
     }
 
     friend inline std::istream& operator>>(std::istream &is, Vector3f &t){
@@ -84,24 +84,18 @@ inline Vector3f operator*(const Vector3f &v1, float t){
     return Vector3f(t*v1.v[0], t*v1.v[1], t*v1.v[2]);
 }
 
-inline Vector3f operator/(float t, const Vector3f &v1){
-    return Vector3f(v1.v[0]/t, v1.v[1]/t, v1.v[2]/t);
-}
-
 inline Vector3f operator/(const Vector3f &v1, float t){
     return Vector3f(v1.v[0]/t, v1.v[1]/t, v1.v[2]/t);
 }
 
 inline float dot(const Vector3f &v1, const Vector3f &v2){
-    return v1.v[0] * v2.v[0] + v1.v[1] * v2.v[1] + v1.v[2] * v2.v[2];
+    return v1.v[0]*v2.v[0] + v1.v[1]*v2.v[1] + v1.v[2]*v2.v[2];
 }
 
 inline Vector3f cross(const Vector3f &v1, const Vector3f &v2){
-    return Vector3f(
-            (v1.v[1]*v2.v[2] - v1.v[2]*v2.v[1]),
-            (-(v1.v[0]*v2.v[2] - v1.v[2]*v2.v[0])),
-            (v1.v[0]*v2.v[1] - v1.v[1]*v2.v[0])
-    );
+    return Vector3f( (v1.v[1]*v2.v[2] - v1.v[2]*v2.v[1]),
+                     (-(v1.v[0]*v2.v[2] - v1.v[2]*v2.v[0])),
+                     (v1.v[0]*v2.v[1] - v1.v[1]*v2.v[0]));
 }
 inline Vector3f& Vector3f::operator+=(const Vector3f &v1){
     v[0] += v1.v[0];

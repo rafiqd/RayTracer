@@ -6,6 +6,7 @@
 #define RENDERER_HITABLELIST_H
 
 #include "Hitable.h"
+#include "AABB.h"
 
 
 class HitableList : public Hitable {
@@ -17,7 +18,9 @@ public:
     HitableList(Hitable **l, int n) { list = l; listSize = n; }
 
     bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const;
+    bool boundingBox(float t0, float t1, AABB& box) const override;
 };
+
 
 
 

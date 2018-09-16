@@ -5,18 +5,14 @@
 #include "HitableList.h"
 
 
-bool HitableList::hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const {
-
-    bool hitAnything = false;
-    float closestSoFar = tMax;
-    HitRecord tempRec;
-
-    for(int i = 0; i < listSize; ++i){
-        if(list[i]->hit(r, tMin, closestSoFar, tempRec)){
-            hitAnything = true;
-            closestSoFar = tempRec.t;
-            rec = tempRec;
-        }
-    }
-    return hitAnything;
-}
+//AABB HitableList::surroundingBox(AABB box0, AABB box1) const {
+//    Vector3f small( fminf(box0._min.x(), box1._min.x()),
+//                    fminf(box0._min.y(), box1._min.y()),
+//                    fminf(box0._min.z(), box1._min.z())
+//    );
+//    Vector3f big  ( fmaxf(box0._max.x(), box1._max.x()),
+//                    fmaxf(box0._max.y(), box1._max.y()),
+//                    fmaxf(box0._max.z(), box1._max.z())
+//    );
+//    return AABB(small, big);
+//}

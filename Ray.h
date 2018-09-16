@@ -14,7 +14,7 @@ public:
     Vector3f o;
     Vector3f d;
     Ray() = default;
-    Ray(const Vector3f& org, const Vector3f dest): o(org), d(dest){}
+    Ray(const Vector3f& org, const Vector3f dest, float ti = 0.0): o(org), d(dest), time(ti){}
 
     Vector3f origin() const { return o; }
     Vector3f direction() const { return d; }
@@ -24,6 +24,7 @@ public:
         return os << "Ray(" << r.o << ", " << r.d << ")";
     }
 
+    float time;
 };
 
 

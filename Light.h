@@ -7,6 +7,9 @@
 
 #include <string>
 
+#include "Texture.h"
+#include "Ray.h"
+
 class Light {
 public:
     std::string name;
@@ -28,6 +31,5 @@ public:
         name = std::move(lightName);
     }
 };
-
 
 #endif //RENDERER_LIGHT_H
