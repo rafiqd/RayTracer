@@ -25,6 +25,8 @@ class Hitable {
 public:
     virtual bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const = 0;
     virtual bool boundingBox(float t0, float t1, AABB& box) const = 0;
+    virtual float pdfValue(const Vector3f& o, const Vector3f& v) const { return 0.0; }
+    virtual Vector3f random(const Vector3f& o) const { return Vector3f(1, 0, 0); }
     AABB surroundingBox(AABB box0, AABB box1) const;
 };
 

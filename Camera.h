@@ -69,7 +69,7 @@ public:
         w = unit_vector(lookfrom - lookat);
         u = unit_vector(cross(vup, w));
         v = cross(w, u);
-        lowerLeftCorner = origin  - half_width*focusDist*u -half_height*focusDist*v - focusDist*w;
+        lowerLeftCorner = origin - half_width*focusDist*u -half_height*focusDist*v - focusDist*w;
         horizontal = 2*half_width*focusDist*u;
         vertical = 2*half_height*focusDist*v;
     }
@@ -85,9 +85,12 @@ public:
         Vector3f rd = lensRaidus * randomInUnitDisk();
         Vector3f offset = u * rd.x() + v * rd.y();
         float time = time0 + drand48() * (time1 - time0);
-        return Ray(origin + offset,
-                   lowerLeftCorner + s*horizontal + t*vertical - origin - offset,
-                   time);
+
+        Vector3f org = origin + offset;
+        Vector3f dir = lowerLeftCorner + s*horizontal + t*vertical - origin - offset;
+
+
+        return Ray(org, dir, time);
     }
 };
 

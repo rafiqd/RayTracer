@@ -6,7 +6,6 @@
 #define RENDERER_SCENES_H
 
 #include "Hitable.h"
-#include "Lambertian.h"
 #include "Rectangle.h"
 #include "ConstantMedium.h"
 #include "Sphere.h"
@@ -20,6 +19,7 @@ Hitable *simple_light();
 Hitable *two_perlin_spheres();
 Hitable *two_spheres();
 Hitable* randomScene();
+void cornell_box_v2(Hitable **scene, Camera **cam, float aspect);
 
 
 #endif //RENDERER_SCENES_H

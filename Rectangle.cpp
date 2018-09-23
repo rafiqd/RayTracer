@@ -2,6 +2,7 @@
 // Created by Rafiq on 2018-09-13.
 //
 
+#include <cfloat>
 #include "HitableList.h"
 #include "Rectangle.h"
 
@@ -69,40 +70,24 @@ bool YZRectangle::hit(const Ray& r, float t0, float t1, HitRecord& rec) const {
     rec.normal = Vector3f(1, 0, 0);
     return true;
 }
-bool HitableList::hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const {
-
-    bool hitAnything = false;
-    float closestSoFar = tMax;
-    HitRecord tempRec;
-
-    for(int i = 0; i < listSize; ++i){
-        if(list[i]->hit(r, tMin, closestSoFar, tempRec)){
-            hitAnything = true;
-            closestSoFar = tempRec.t;
-            rec = tempRec;
-        }
-    }
-    return hitAnything;
-}
-
-bool HitableList::boundingBox(float t0, float t1, AABB& box) const {
-    if (listSize < 1) return false;
-    AABB tempBox;
-    bool firstTrue = list[0]->boundingBox(t0, t1, tempBox);
-    if ( !firstTrue )
-        return false;
-    else
-        box = tempBox;
-    for (int i = 1; i < listSize; i++){
-        if(list[0]->boundingBox(t0, t1, tempBox)){
-            box = surroundingBox(box, tempBox);
-        } else
-            return false;
-    }
-    return true;
-}
 
 
 bool Box::hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const {
     return listPtr->hit(r, tMin, tMax, rec);
+}
+
+float XZRectangle::pdfValue(const Vector3f& o, const Vector3f& v) const {
+    HitRecord rec;
+    if (this->hit(Ray(o,v), 0.001, FLT_MAX, rec)){
+        float area = (x1 - x0) * (z1 - z0);
+        float distance_squared = rec.t * rec.t * v.squared_length();
+        float cosine = fabsf(dot(v, rec.normal) / v.length());
+        return distance_squared / (cosine * area);
+    }
+    return 0;
+}
+
+Vector3f XZRectangle::random(const Vector3f& o) const {
+    Vector3f randomPoint = Vector3f(x0 + drand48()*(x1-x0), k, z0 + drand48()*(z1-z0));
+    return randomPoint - o;
 }

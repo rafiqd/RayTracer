@@ -17,8 +17,22 @@ public:
     HitableList() = default;
     HitableList(Hitable **l, int n) { list = l; listSize = n; }
 
-    bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const;
+    bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const override ;
     bool boundingBox(float t0, float t1, AABB& box) const override;
+    float pdfValue(const Vector3f& o, const Vector3f& v) const override {
+        float weight = 1.0f / listSize;
+        float sum = 0;
+        for (int i = 0; i < listSize; i++){
+            sum += weight * list[i]->pdfValue(o, v);
+        }
+        return sum;
+    }
+
+    Vector3f random(const Vector3f& o) const override {
+        int index = int(drand48() * listSize);
+        return list[ index ]->random(o);
+    }
+
 };
 
 

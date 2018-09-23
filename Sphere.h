@@ -10,6 +10,16 @@
 
 void getSphereUV(const Vector3f& p, float& u, float& v);
 
+inline Vector3f randomToSphere(float radius, float distanceSquared){
+    float r1 = drand48();
+    float r2 = drand48();
+    float z = 1 + r2 * (sqrtf(1 - radius*radius/distanceSquared) - 1);
+    float phi = 2*M_PI*r1;
+    float x = cosf(phi)*sqrtf(1-z*z);
+    float y = sinf(phi)*sqrtf(1-z*z);
+    return Vector3f(x, y , z);
+}
+
 class Sphere: public Hitable {
 public:
     Vector3f center;
@@ -21,6 +31,9 @@ public:
 
     bool hit(const Ray& r, float tMin, float tMax, HitRecord& rec) const override ;
     bool boundingBox(float t0, float t1, AABB& box) const override ;
+    float pdfValue(const Vector3f& o, const Vector3f& v) const override ;
+    Vector3f random(const Vector3f& o) const override ;
+
 };
 
 class MovingSphere : public Hitable {

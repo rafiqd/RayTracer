@@ -3,19 +3,22 @@
 #include <vector>
 #include <sstream>
 #include <functional>
+#include <ctime>
 
 #include "scenes.h"
 #include "main.h"
+#include "PDF.h"
 
 void parseSceneFile(const std::vector<std::string> &,
                     std::vector<Triangle>&,
                     std::vector<Light> &,
                     Camera**);
 
-int nx = 400;
-int ny = 400;
+int nx = 500;
+int ny = 500;
 
 int main(int argc, char **argv) {
+
     std::string filename(argv[argc - 1]);
     std::ifstream infile;
     infile.open(filename);
@@ -51,7 +54,7 @@ bool refract(const Vector3f& v, const Vector3f& n, float niOverNt, Vector3f& ref
     float dt = dot(uv, n);
     float discriminant = 1.0f - niOverNt*niOverNt*(1-dt*dt);
     if (discriminant > 0){
-        refracted = niOverNt*(uv - n*dt)- n*sqrtf(discriminant);
+        refracted = niOverNt*(uv - n*dt)- n*sqrt(discriminant);
         return true;
     }
     return false;
@@ -67,8 +70,10 @@ Vector3f randomInUnitDisk(){
 
     Vector3f p;
     do {
-        p = 2.0* Vector3f(drand48(),drand48(),0) - Vector3f(1,1,0);
-    } while (dot(p,p) >= 1.0f);
+        float r1 = drand48();
+        float r2 = drand48();
+        p = 2.0*Vector3f(r1,r2,0) - Vector3f(1,1,0);
+    } while (dot(p,p) >= 1.0);
 
     return p;
 }
@@ -78,20 +83,35 @@ Vector3f randomInUnitSphere(){
     Vector3f p;
 
     do {
-        p = 2.0f * Vector3f(drand48(),drand48(),drand48()) - Vector3f(1.0, 1.0, 1.0);
+        p = 2.0f * Vector3f(float(drand48()),float(drand48()),float(drand48())) - Vector3f(1.0, 1.0, 1.0);
     } while (dot(p,p) >= 1.0f);
 
     return unit_vector(p);
 }
 
-Vector3f color(const Ray& r, Hitable *world, int depth) {
+Vector3f color(const Ray& r, Hitable *world, Hitable *lightShape, int depth) {
     HitRecord rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec)) {
-        Ray scattered;
-        Vector3f attenuation;
-        Vector3f emitted = rec.matPtr->emitted(rec.u, rec.v, rec.p);
-        if (depth < 50 && rec.matPtr->scatter(r, rec, attenuation, scattered))
-            return emitted + attenuation*color(scattered, world, depth+1);
+        ScatterRecord srec;
+        Vector3f emitted = rec.matPtr->emitted(r, rec, rec.u, rec.v, rec.p);
+        if (depth < 50 && rec.matPtr->scatter(r, rec, srec)){
+            if (srec.isSpecular){
+                return srec.attenuation * color(srec.SpecularRay, world, lightShape, depth+1);
+            }else{
+                HitablePDF p0(lightShape, rec.p);
+                MixturePDF p(&p0, srec.pdfPtr);
+                Ray scattered = Ray(rec.p, p.generate(), r.time);
+                float pdf_val = p.value(scattered.direction());
+                float spdf = rec.matPtr->scattering_pdf(r, rec, scattered);
+                if (pdf_val == 0 && spdf == 0){
+                    return emitted;
+                }
+                Vector3f zeroVec(0, 0, 0);
+                Vector3f tcolor = color(scattered, world, lightShape, depth+1);
+                return emitted + srec.attenuation*spdf*tcolor / pdf_val;
+
+            }
+        }
         else
             return emitted;
     }
@@ -106,43 +126,48 @@ std::string render(Camera* cam, std::vector<Triangle> *geoList, std::vector<Ligh
     ss << "P3\n" << nx << " " << ny << "\n255\n";
     std::cout << "P3\n" << nx << " " << ny << "\n255\n";
 
-    float aperture = 0.0f;
-    Vector3f lookform(278, 278, -800);
-    Vector3f lookat(278, 278, 0);
-    float distToFocus = 10.00f;
-    float vfov = 40.0;
-    Hitable *world = cornell_smoke();
+    Hitable *world;
+    cornell_box_v2(&world, &cam, float(nx)/float(ny));
 
+    std::clock_t start = std::clock();
+    Hitable* lightShape = new XZRectangle(213, 343, 227, 332, 554, nullptr);
+    Hitable* glassSphere = new Sphere(Vector3f(190, 90, 190), 90, nullptr);
+    Hitable *a[2];
+    a[0] = lightShape;
+    a[1] = glassSphere;
+    HitableList hlist(a,2);
 
-//    Hitable *world = simple_light(); // two_spheres(); //randomScene();
-//    float aperture = 0.0f;
-//    Vector3f lookform(13,2,3);
-//    Vector3f lookat(0,0,0);
-//    float distToFocus = (lookform - lookat).length();
-//    float vfov = 40;
+    srand48(10);
+    for (int j = ny - 1, count = 0; j >= 0; j--, count++) {
+        std::cout << (count / float(ny))*100 << "%" << std::endl;
+        for (int i = 0; i < nx; i++) {
 
-    cam = new Camera(lookform, lookat, Vector3f(0,1,0), vfov, float(nx)/float(ny), aperture, distToFocus, 0.0f, 1.0f);
+            if (!(j == 155 && i == 330)) {
+                //ss << 0 << " " << 0 << " " << 0 << std::endl;
+                //continue;
+            }
 
-    for (int j = ny-1, count = 0; j >= 0; j--, count++){
-        std::cout << float(count / float(ny))*100 << "%" << std::endl;
-        for(int i = 0; i < nx; i++){
             Vector3f col(0, 0, 0);
-            for (int s = 0; s < ns; s++){
+            for (int s = 0; s < ns; s++) {
                 float u = float(i + drand48()) / float(nx);
                 float v = float(j + drand48()) / float(ny);
                 Ray r = cam->getRay(u, v);
                 Vector3f p = r.point_at_t(2.0);
-                col += color(r, world, 0);
+                Vector3f tcol = deNan(color(r, world, &hlist, 0));
+                col += tcol;
             }
             col /= float(ns);
-            col = Vector3f(sqrtf(col[0]), sqrtf(col[1]), sqrtf(col[2]));
+            col = Vector3f(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
             int ir = int(255.99 * col[0]);
             int ig = int(255.99 * col[1]);
             int ib = int(255.99 * col[2]);
-            ss << ir << " " << ig << " " << ib << std::endl;
+
+            ss << ir << " " << ig << " " << ib << "\n";
         }
     }
-    std::cout << "done" << std::endl;
+
+    std::clock_t end = std::clock();
+    std::cout << "done in: " << ((end - start) / (double)(CLOCKS_PER_SEC / 1000)) / 1000 / 60 << std::endl;
     return ss.str();
 }
 

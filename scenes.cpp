@@ -4,6 +4,34 @@
 
 #include "scenes.h"
 
+void cornell_box_v2(Hitable **scene, Camera **cam, float aspect){
+
+    int i = 0;
+    Hitable **list = new Hitable*[8];
+
+    Material *red = new Lambertian( new ConstantTexture(Vector3f(0.65, 0.05, 0.05)) );
+    Material *white = new Lambertian( new ConstantTexture(Vector3f(0.73, 0.73, 0.73)) );
+    Material *green = new Lambertian( new ConstantTexture(Vector3f(0.12, 0.45, 0.15)) );
+    Material *light = new DiffuseLight( new ConstantTexture(Vector3f(15, 15, 15)) );
+
+    list[i++] = new FlipNormals(new YZRectangle(0, 555, 0, 555, 555, green));
+    list[i++] = new YZRectangle(0, 555, 0, 555, 0, red);
+    list[i++] = new FlipNormals(new XZRectangle(213, 343, 227, 332, 554, light));
+    list[i++] = new FlipNormals(new XZRectangle(0, 555, 0, 555, 555, white));
+    list[i++] = new XZRectangle(0, 555, 0, 555, 0, white);
+    list[i++] = new FlipNormals(new XYRectangle(0, 555, 0, 555, 555, white));
+    Material *glass = new Dielectric(1.5);
+    list[i++] = new Sphere(Vector3f(190, 90, 190), 90, glass);
+    list[i++] = new Translate(new RotateY(new Box(Vector3f(0, 0, 0), Vector3f(165, 330, 165), white), 15), Vector3f(265, 0, 295));
+    *scene = new BVHNode(list, i, 0, 1);
+    Vector3f lookfrom(278, 278, -800);
+    Vector3f lookat(278, 278, 0);
+    float distToFocus = 10;
+    float aperture = 0.00;
+    float vfov = 40.0;
+    *cam = new Camera(lookfrom, lookat, Vector3f(0,1,0), vfov, aspect, aperture, distToFocus, 0.0, 1.0);
+}
+
 Hitable* cornell_box(){
 
     Hitable **list = new Hitable*[8];

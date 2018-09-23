@@ -9,13 +9,24 @@
 #include "Hitable.h"
 #include "Texture.h"
 #include "main.h"
+#include "ONB.h"
+#include "PDF.h"
 
-Vector3f randomInUnitSphere();
+class ScatterRecord {
+public:
+    Ray SpecularRay;
+    bool isSpecular;
+    Vector3f attenuation;
+    PDF *pdfPtr;
+};
 
 class Material {
 public:
-    virtual bool scatter(const Ray& r_in, const HitRecord& rec, Vector3f& attenuation, Ray& scattered) const = 0;
-    virtual Vector3f emitted(float u, float v, const Vector3f& p) const { return Vector3f(0, 0, 0); }
+    virtual bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec) const = 0;
+    virtual Vector3f emitted(const Ray& r_in, const HitRecord& rec, float u, float v, const Vector3f& p) const { return Vector3f(0, 0, 0); }
+    virtual float scattering_pdf(const Ray& r_in, const HitRecord& hrec, const Ray& scattered) const {
+        return false;
+    }
 };
 
 class DiffuseLight : public Material {
@@ -23,12 +34,14 @@ public:
     Texture *emit;
 
     explicit DiffuseLight(Texture *a): emit(a) {}
-    bool scatter(const Ray& r_in, const HitRecord& rec, Vector3f& attenuation, Ray& scattered) const override {
+    bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec) const override {
         return false;
     }
 
-    Vector3f emitted(float u, float v, const Vector3f& p) const override {
-        return emit->value(u, v, p);
+    Vector3f emitted(const Ray& r_in, const HitRecord& rec, float u, float v, const Vector3f& p) const override {
+        if (dot(rec.normal, r_in.direction()) < 0.0f)
+            return emit->value(u,v,p);
+        return Vector3f(0,0,0);
     }
 
 };
@@ -37,52 +50,52 @@ class Isotropic: public Material {
 public:
     Texture *albedo;
     explicit Isotropic(Texture *a): albedo(a) {}
-    bool scatter(const Ray& r_in, const HitRecord& rec, Vector3f& attenuation, Ray& scattered) const override {
-        scattered = Ray(rec.p, randomInUnitSphere());
-        attenuation = albedo->value(rec.u, rec.v, rec.p);
+    bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec) const override {
+        srec.SpecularRay = Ray(rec.p, randomInUnitSphere());
+        srec.attenuation = albedo->value(rec.u, rec.v, rec.p);
         return true;
     }
 };
 
 class Dielectric : public Material {
 public:
-    float refIdx;
-
-    Dielectric(float ri): refIdx(ri) {
-    }
-
-    bool scatter(const Ray& r_in, const HitRecord& rec, Vector3f& attenuation, Ray& scattered) const override {
-        Vector3f outwardNormal;
-        Vector3f reflected = reflect(r_in.direction(), rec.normal);
-        float niOverNt;
-        attenuation = Vector3f(1.0, 1.0, 1.0);
+    Dielectric(float ri) : ref_idx(ri) {}
+    virtual bool scatter(const Ray& r_in, const HitRecord& hrec, ScatterRecord& srec) const {
+        srec.isSpecular = true;
+        srec.pdfPtr = 0;
+        srec.attenuation = Vector3f(1.0, 1.0, 1.0);
+        Vector3f outward_normal;
+        Vector3f reflected = reflect(r_in.direction(), hrec.normal);
         Vector3f refracted;
+        float ni_over_nt;
+        float reflect_prob;
         float cosine;
-        float reflectProb;
-        if (dot(r_in.direction(), rec.normal) > 0){
-            outwardNormal = -rec.normal;
-            niOverNt = refIdx;
-            cosine = refIdx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
-        } else {
-            outwardNormal = rec.normal;
-            niOverNt = 1.0f / refIdx;
-            cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
+        if (dot(r_in.direction(), hrec.normal) > 0) {
+            outward_normal = -hrec.normal;
+            ni_over_nt = ref_idx;
+            cosine = ref_idx * dot(r_in.direction(), hrec.normal) / r_in.direction().length();
         }
-
-        if (refract(r_in.direction(), outwardNormal, niOverNt, refracted)){
-            reflectProb = schlick(cosine, refIdx);
-        }else{
-            reflectProb = 1.0;
+        else {
+            outward_normal = hrec.normal;
+            ni_over_nt = 1.0 / ref_idx;
+            cosine = -dot(r_in.direction(), hrec.normal) / r_in.direction().length();
         }
-        float random = float(rand()) / float(RAND_MAX);
-
-        if(random < reflectProb){
-            scattered = Ray(rec.p, reflected);
-        } else {
-            scattered = Ray(rec.p, refracted);
+        if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) {
+            reflect_prob = schlick(cosine, ref_idx);
+        }
+        else {
+            reflect_prob = 1.0;
+        }
+        if (drand48() < reflect_prob) {
+            srec.SpecularRay = Ray(hrec.p, reflected);
+        }
+        else {
+            srec.SpecularRay = Ray(hrec.p, refracted);
         }
         return true;
     }
+
+    float ref_idx;
 };
 
 class Metal : public Material {
@@ -97,11 +110,33 @@ public:
             fuzz = 1;
         }
     }
-    bool scatter(const Ray& r_in, const HitRecord& rec, Vector3f& attenuation, Ray& scattered) const override {
-        Vector3f reflected = reflect(unit_vector(r_in.direction()), rec.normal);
-        scattered = Ray(rec.p, reflected);
-        attenuation = albedo;
-        return dot(scattered.direction(), rec.normal) > 0;
+    bool scatter(const Ray& r_in, const HitRecord& hrec, ScatterRecord& srec) const override {
+        Vector3f reflected = reflect(unit_vector(r_in.direction()), hrec.normal);
+        srec.SpecularRay = Ray(hrec.p, reflected + fuzz*randomInUnitSphere());
+        srec.attenuation = albedo;
+        srec.isSpecular = true;
+        srec.pdfPtr = nullptr;
+        return true;
+    }
+};
+
+class Lambertian : public Material {
+public:
+    Texture *albedo;
+
+    explicit Lambertian(Texture *a): albedo(a) {};
+    bool scatter(const Ray& r_in, const HitRecord& hrec, ScatterRecord& srec) const override {
+        srec.isSpecular = false;
+        srec.attenuation = albedo->value(hrec.u, hrec.v, hrec.p);
+        srec.pdfPtr = new CosinePDF(hrec.normal);
+        return true;
+    }
+
+    float scattering_pdf(const Ray& r_in, const HitRecord& hrec, const Ray& scattered) const override {
+        float cosine = dot(hrec.normal, unit_vector(scattered.direction()));
+        if (cosine < 0)
+            return 0;
+        return cosine / M_PI;
     }
 };
 

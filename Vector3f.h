@@ -13,7 +13,11 @@ public:
     float v[3];
 
     Vector3f() = default;
-    Vector3f(float u1, float u2, float u3): v{u1, u2, u3}{}
+    Vector3f(float u1, float u2, float u3){
+            v[0] = u1;
+            v[1] = u2;
+            v[2] = u3;
+    }
     inline float x() const { return v[0]; }
     inline float y() const { return v[1]; }
     inline float z() const { return v[2]; }
@@ -35,7 +39,7 @@ public:
     }
 
     inline float squared_length() const{
-        return v[0]*v[0] + v[1]*v[1] + v[2]*v[3];
+        return v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
     }
 
     inline void make_unit_vector();

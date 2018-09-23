@@ -2,12 +2,13 @@
 // Created by Rafiq on 2018-09-03.
 //
 
+#include <cfloat>
 #include "Sphere.h"
 
 void getSphereUV(const Vector3f& p, float& u, float& v){
     float phi = atan2(p.z(), p.x());
     float theta = asin(p.y());
-    u = 1 - (phi + M_PI) / (2*M_PI);
+    u = 1-(phi + M_PI) / (2*M_PI);
     v = (theta + M_PI/2) / M_PI;
 }
 
@@ -100,4 +101,23 @@ AABB MovingSphere::surroundingBox(AABB box0, AABB box1) const {
                     fmaxf(box0._max.z(), box1._max.z())
     );
     return AABB(small, big);
+}
+
+float Sphere::pdfValue(const Vector3f& o, const Vector3f& v) const {
+    HitRecord rec;
+    if (this->hit(Ray(o, v), 0.001, FLT_MAX, rec)) {
+        float cos_theta_max = sqrt(1 - radius*radius/(center-o).squared_length());
+        float solid_angle = 2*M_PI*(1-cos_theta_max);
+        return  1 / solid_angle;
+    }
+    else
+        return 0;
+}
+
+Vector3f Sphere::random(const Vector3f& o) const {
+    Vector3f direction = center - o;
+    float distance_squared = direction.squared_length();
+    ONB uvw;
+    uvw.buildFromW(direction);
+    return uvw.local(randomToSphere(radius, distance_squared));
 }

@@ -46,6 +46,8 @@ public:
         box = AABB(Vector3f(x0, k - 0.0001f, z0), Vector3f(x1, k + 0.0001f, z1));
         return true;
     }
+    float pdfValue(const Vector3f& o, const Vector3f& v) const override;
+    Vector3f random(const Vector3f& o) const override;
 };
 
 class YZRectangle : public Hitable {
