@@ -4,18 +4,28 @@
 #include <sstream>
 #include <functional>
 #include <ctime>
+#include <chrono>
 
 #include "scenes.h"
-#include "main.h"
-#include "PDF.h"
+#include "parallel.h"
+
+void threaded_render(int idx);
+std::string render_v2();
 
 void parseSceneFile(const std::vector<std::string> &,
                     std::vector<Triangle>&,
                     std::vector<Light> &,
                     Camera**);
 
-int nx = 500;
-int ny = 500;
+
+Vector3f *output_img;
+int *workedon;
+int nx;
+int ny;
+int ns;
+Camera* render_cam;
+Hitable *world;
+HitableList hlist;
 
 int main(int argc, char **argv) {
 
@@ -25,6 +35,15 @@ int main(int argc, char **argv) {
     std::vector<std::string> lines;
     std::string line;
 
+    nx = 500;
+    ny = 500;
+    ns = 500;
+
+    output_img = new Vector3f[nx*ny];
+    workedon = new int[12];
+    for (int i = 0; i < 12; ++i){
+        workedon[i] = 0;
+    }
 
     while(std::getline(infile, line)){
         lines.push_back(line);
@@ -34,14 +53,25 @@ int main(int argc, char **argv) {
     std::vector<Light> lightList;
     Camera *cam;
     parseSceneFile(lines, geoList, lightList, &cam);
-    std::string ppmImg;
-    ppmImg = render(cam, &geoList, &lightList);
 
+    std::string ppmImg;
+    auto startTime = std::chrono::high_resolution_clock::now();
+    //ppmImg = render();
+    ppmImg = render_v2();
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto dur = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count();
+
+    int mint = int(dur) / 60;
+    int sect = int(dur) % 60;
+    std::cout << "time: " << mint << "m " << sect << "s" << std::endl;
     std::ofstream outfile("E:/scenes/renderer/img.ppm");
     std::cout << "writing file" << std::endl;
     outfile << ppmImg << std::endl;
     std::cout << "done writing" << std::endl;
     outfile.close();
+    for (int i = 0; i < 12; ++i){
+        std::cout << "thread " << i << " worked on " << workedon[i] << " chunks" << std::endl;
+    }
     return 0;
 }
 
@@ -119,40 +149,31 @@ Vector3f color(const Ray& r, Hitable *world, Hitable *lightShape, int depth) {
         return Vector3f(0,0,0);
 }
 
-std::string render(Camera* cam, std::vector<Triangle> *geoList, std::vector<Light> *lightList){
+std::string render(){
 
-    int ns = 100;
     std::stringstream ss;
     ss << "P3\n" << nx << " " << ny << "\n255\n";
     std::cout << "P3\n" << nx << " " << ny << "\n255\n";
 
-    Hitable *world;
-    cornell_box_v2(&world, &cam, float(nx)/float(ny));
+    cornell_box_v2(&world, &render_cam, float(nx)/float(ny));
 
-    std::clock_t start = std::clock();
     Hitable* lightShape = new XZRectangle(213, 343, 227, 332, 554, nullptr);
     Hitable* glassSphere = new Sphere(Vector3f(190, 90, 190), 90, nullptr);
     Hitable *a[2];
     a[0] = lightShape;
     a[1] = glassSphere;
-    HitableList hlist(a,2);
+    hlist = HitableList(a,2);
 
     srand48(10);
     for (int j = ny - 1, count = 0; j >= 0; j--, count++) {
         std::cout << (count / float(ny))*100 << "%" << std::endl;
         for (int i = 0; i < nx; i++) {
 
-            if (!(j == 155 && i == 330)) {
-                //ss << 0 << " " << 0 << " " << 0 << std::endl;
-                //continue;
-            }
-
             Vector3f col(0, 0, 0);
             for (int s = 0; s < ns; s++) {
                 float u = float(i + drand48()) / float(nx);
                 float v = float(j + drand48()) / float(ny);
-                Ray r = cam->getRay(u, v);
-                Vector3f p = r.point_at_t(2.0);
+                Ray r = render_cam->getRay(u, v);
                 Vector3f tcol = deNan(color(r, world, &hlist, 0));
                 col += tcol;
             }
@@ -165,10 +186,56 @@ std::string render(Camera* cam, std::vector<Triangle> *geoList, std::vector<Ligh
             ss << ir << " " << ig << " " << ib << "\n";
         }
     }
-
-    std::clock_t end = std::clock();
-    std::cout << "done in: " << ((end - start) / (double)(CLOCKS_PER_SEC / 1000)) / 1000 / 60 << std::endl;
     return ss.str();
+}
+
+std::string render_v2(){
+
+    std::stringstream ss;
+    ss << "P3\n" << nx << " " << ny << "\n255\n";
+    std::cout << "P3\n" << nx << " " << ny << "\n255\n";
+
+    cornell_box_v2(&world, &render_cam, float(nx)/float(ny));
+
+    Hitable* lightShape = new XZRectangle(213, 343, 227, 332, 554, nullptr);
+    Hitable* glassSphere = new Sphere(Vector3f(190, 90, 190), 90, nullptr);
+    Hitable *a[2];
+    a[0] = lightShape;
+    a[1] = glassSphere;
+    hlist = HitableList(a,2);
+
+    srand48(10);
+    //ParallelInit();
+    int chunkSize = ((nx * ny) / 11) / 8;
+    ParallelFor(threaded_render, nx*ny, chunkSize);
+    ParallelCleanup();
+    for(int i = 0; i < nx*ny; ++i){
+        Vector3f rgbv = output_img[i];
+        int ir = int(255.99 * rgbv[0]);
+        int ig = int(255.99 * rgbv[1]);
+        int ib = int(255.99 * rgbv[2]);
+        ss << ir << " " << ig << " " << ib << "\n";
+    }
+    return ss.str();
+}
+
+void threaded_render(int idx){
+    int row = idx / ny;
+    row = (ny-1) - row;
+    int col = idx % ny;
+
+    Vector3f rgbv(0, 0, 0);
+
+    for (int s = 0; s < ns; s++) {
+        float u = float(col + drand48()) / float(nx);
+        float v = float(row + drand48()) / float(ny);
+        Ray r = render_cam->getRay(u, v);
+        Vector3f tcol = deNan(color(r, world, &hlist, 0));
+        rgbv += tcol;
+    }
+    rgbv /= float(ns);
+    rgbv = Vector3f(sqrt(rgbv[0]), sqrt(rgbv[1]), sqrt(rgbv[2]));
+    output_img[idx] = rgbv;
 }
 
 void parseSceneFile(const std::vector<std::string> &sceneDes,
