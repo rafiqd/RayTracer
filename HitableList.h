@@ -5,6 +5,7 @@
 #ifndef RENDERER_HITABLELIST_H
 #define RENDERER_HITABLELIST_H
 
+#include "RNG.h"
 #include "Hitable.h"
 #include "AABB.h"
 
@@ -29,7 +30,8 @@ public:
     }
 
     Vector3f random(const Vector3f& o) const override {
-        int index = int(drand48() * listSize);
+        float r1 = gen.UniformFloat(0,1);
+        int index = int(r1 * listSize);
         return list[ index ]->random(o);
     }
 

@@ -11,9 +11,10 @@
 
 class PDF {
 public:
-    virtual float value(const Vector3f& direction) const = 0;
-    virtual Vector3f generate() const = 0;
+    virtual float value(const Vector3f& direction) const { return 0; }
+    virtual Vector3f generate() const { return Vector3f(0, 0, 0); }
 };
+
 
 class CosinePDF : public PDF {
 public:
@@ -35,30 +36,32 @@ public:
 class HitablePDF : public PDF {
 public:
     Vector3f o;
-    Hitable *ptr;
-    HitablePDF(Hitable *p, const Vector3f& origin): ptr(p), o(origin) {}
+    Hitable &ptr;
+    HitablePDF(Hitable &p, const Vector3f& origin): ptr(p), o(origin) {}
     float value(const Vector3f& direction) const {
-        return ptr->pdfValue(o, direction);
+        return ptr.pdfValue(o, direction);
     }
     Vector3f generate() const {
-        return ptr->random(o);
+        return ptr.random(o);
     }
 };
 
 class MixturePDF : public PDF {
 public:
-    PDF *p[2];
+    PDF &_p1;
+    PDF &_p2;
 
-    MixturePDF(PDF *p0, PDF *p1) { p[0] = p0; p[1] = p1; }
+    MixturePDF(PDF &p0, PDF &p1): _p1(p0), _p2(p1) {}
     float value(const Vector3f& direction) const override {
-        return 0.5f*p[0]->value(direction) + 0.5f*p[1]->value(direction);
+        return 0.5f*_p1.value(direction) + 0.5f*_p2.value(direction);
     }
 
     Vector3f generate() const override {
-        if (drand48() < 0.5){
-            return p[0]->generate();
+        float r1 = gen.UniformFloat(0,1);
+        if (r1 < 0.5){
+            return _p1.generate();
         }
-        return p[1]->generate();
+        return _p2.generate();
     }
 
 };

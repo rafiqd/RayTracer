@@ -56,7 +56,6 @@ int main(int argc, char **argv) {
 
     std::string ppmImg;
     auto startTime = std::chrono::high_resolution_clock::now();
-    //ppmImg = render();
     ppmImg = render_v2();
     auto endTime = std::chrono::high_resolution_clock::now();
     auto dur = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count();
@@ -100,8 +99,8 @@ Vector3f randomInUnitDisk(){
 
     Vector3f p;
     do {
-        float r1 = drand48();
-        float r2 = drand48();
+        float r1 = gen.UniformFloat(0,1);
+        float r2 = gen.UniformFloat(0,1);
         p = 2.0*Vector3f(r1,r2,0) - Vector3f(1,1,0);
     } while (dot(p,p) >= 1.0);
 
@@ -113,7 +112,10 @@ Vector3f randomInUnitSphere(){
     Vector3f p;
 
     do {
-        p = 2.0f * Vector3f(float(drand48()),float(drand48()),float(drand48())) - Vector3f(1.0, 1.0, 1.0);
+        float r1 = gen.UniformFloat(0,1);
+        float r2 = gen.UniformFloat(0,1);
+        float r3 = gen.UniformFloat(0,1);
+        p = 2.0f * Vector3f(r1, r2, r3) - Vector3f(1.0, 1.0, 1.0);
     } while (dot(p,p) >= 1.0f);
 
     return unit_vector(p);
@@ -124,19 +126,23 @@ Vector3f color(const Ray& r, Hitable *world, Hitable *lightShape, int depth) {
     if (world->hit(r, 0.001, MAXFLOAT, rec)) {
         ScatterRecord srec;
         Vector3f emitted = rec.matPtr->emitted(r, rec, rec.u, rec.v, rec.p);
-        if (depth < 50 && rec.matPtr->scatter(r, rec, srec)){
+
+        if (depth >= 50){
+            return emitted;
+        }
+
+        if (rec.matPtr->scatter(r, rec, srec)){
             if (srec.isSpecular){
                 return srec.attenuation * color(srec.SpecularRay, world, lightShape, depth+1);
             }else{
-                HitablePDF p0(lightShape, rec.p);
-                MixturePDF p(&p0, srec.pdfPtr);
+                HitablePDF p0(*lightShape, rec.p);
+                MixturePDF p(p0, srec.pdfPtr);
                 Ray scattered = Ray(rec.p, p.generate(), r.time);
                 float pdf_val = p.value(scattered.direction());
                 float spdf = rec.matPtr->scattering_pdf(r, rec, scattered);
                 if (pdf_val == 0 && spdf == 0){
                     return emitted;
                 }
-                Vector3f zeroVec(0, 0, 0);
                 Vector3f tcolor = color(scattered, world, lightShape, depth+1);
                 return emitted + srec.attenuation*spdf*tcolor / pdf_val;
 
@@ -171,8 +177,10 @@ std::string render(){
 
             Vector3f col(0, 0, 0);
             for (int s = 0; s < ns; s++) {
-                float u = float(i + drand48()) / float(nx);
-                float v = float(j + drand48()) / float(ny);
+                float r1 = gen.UniformFloat(0, 1);
+                float r2 = gen.UniformFloat(0, 1);
+                float u = (i + r1) / float(nx);
+                float v = (j + r2) / float(ny);
                 Ray r = render_cam->getRay(u, v);
                 Vector3f tcol = deNan(color(r, world, &hlist, 0));
                 col += tcol;
@@ -193,7 +201,6 @@ std::string render_v2(){
 
     std::stringstream ss;
     ss << "P3\n" << nx << " " << ny << "\n255\n";
-    std::cout << "P3\n" << nx << " " << ny << "\n255\n";
 
     cornell_box_v2(&world, &render_cam, float(nx)/float(ny));
 
@@ -204,9 +211,8 @@ std::string render_v2(){
     a[1] = glassSphere;
     hlist = HitableList(a,2);
 
-    srand48(10);
-    //ParallelInit();
-    int chunkSize = ((nx * ny) / 11) / 8;
+    int chunkSize =  ((nx * ny) / 11) / 8;
+    ParallelInit();
     ParallelFor(threaded_render, nx*ny, chunkSize);
     ParallelCleanup();
     for(int i = 0; i < nx*ny; ++i){
@@ -227,8 +233,10 @@ void threaded_render(int idx){
     Vector3f rgbv(0, 0, 0);
 
     for (int s = 0; s < ns; s++) {
-        float u = float(col + drand48()) / float(nx);
-        float v = float(row + drand48()) / float(ny);
+        float r1 = gen.UniformFloat(0,1);
+        float r2 = gen.UniformFloat(0,1);
+        float u = (col + r1) / float(nx);
+        float v = (row + r2) / float(ny);
         Ray r = render_cam->getRay(u, v);
         Vector3f tcol = deNan(color(r, world, &hlist, 0));
         rgbv += tcol;

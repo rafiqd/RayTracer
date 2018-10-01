@@ -7,6 +7,7 @@
 
 #include <ostream>
 
+#include "RNG.h"
 #include "Ray.h"
 
 Vector3f randomInUnitDisk();
@@ -84,7 +85,8 @@ public:
     Ray getRay(float s, float t){
         Vector3f rd = lensRaidus * randomInUnitDisk();
         Vector3f offset = u * rd.x() + v * rd.y();
-        float time = time0 + drand48() * (time1 - time0);
+        float r1 = gen.UniformFloat(0,1);
+        float time = time0 + r1 * (time1 - time0);
 
         Vector3f org = origin + offset;
         Vector3f dir = lowerLeftCorner + s*horizontal + t*vertical - origin - offset;

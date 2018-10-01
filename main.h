@@ -7,6 +7,7 @@
 
 #include <thread>
 
+#include "RNG.h"
 #include "Vector3f.h"
 #include "Ray.h"
 #include "Hitable.h"
@@ -23,8 +24,8 @@ Vector3f randomInUnitSphere();
 std::string render();
 Vector3f reflect(const Vector3f& v, const Vector3f& n);
 inline Vector3f randomCosineDireciton(){
-    float r1 = drand48();
-    float r2 = drand48();
+    float r1 = gen.UniformFloat(0,1);
+    float r2 = gen.UniformFloat(0,1);
     float z = sqrtf(1-r2);
     float phi = 2*M_PI*r1;
     float x = cos(phi) * 2 * sqrt(r2);

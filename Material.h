@@ -17,7 +17,7 @@ public:
     Ray SpecularRay;
     bool isSpecular;
     Vector3f attenuation;
-    PDF *pdfPtr;
+    PDF pdfPtr;
 };
 
 class Material {
@@ -62,7 +62,6 @@ public:
     Dielectric(float ri) : ref_idx(ri) {}
     virtual bool scatter(const Ray& r_in, const HitRecord& hrec, ScatterRecord& srec) const {
         srec.isSpecular = true;
-        srec.pdfPtr = 0;
         srec.attenuation = Vector3f(1.0, 1.0, 1.0);
         Vector3f outward_normal;
         Vector3f reflected = reflect(r_in.direction(), hrec.normal);
@@ -86,7 +85,9 @@ public:
         else {
             reflect_prob = 1.0;
         }
-        if (drand48() < reflect_prob) {
+
+        float r1 = gen.UniformFloat(0,1);
+        if (r1 < reflect_prob) {
             srec.SpecularRay = Ray(hrec.p, reflected);
         }
         else {
@@ -115,7 +116,6 @@ public:
         srec.SpecularRay = Ray(hrec.p, reflected + fuzz*randomInUnitSphere());
         srec.attenuation = albedo;
         srec.isSpecular = true;
-        srec.pdfPtr = nullptr;
         return true;
     }
 };
@@ -128,7 +128,7 @@ public:
     bool scatter(const Ray& r_in, const HitRecord& hrec, ScatterRecord& srec) const override {
         srec.isSpecular = false;
         srec.attenuation = albedo->value(hrec.u, hrec.v, hrec.p);
-        srec.pdfPtr = new CosinePDF(hrec.normal);
+        srec.pdfPtr = CosinePDF(hrec.normal);
         return true;
     }
 

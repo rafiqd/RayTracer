@@ -5,9 +5,6 @@
 #ifndef RENDERER_AABB_H
 #define RENDERER_AABB_H
 
-#include <cmath>
-#include <utility>
-
 #include "Vector3f.h"
 #include "Ray.h"
 

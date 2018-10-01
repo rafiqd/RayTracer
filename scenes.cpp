@@ -123,27 +123,34 @@ Hitable* randomScene(){
 
     for(int a = -10; a < 10; a++){
         for (int b = -10; b < 10; b++){
-            float chooseMat = drand48();
-            Vector3f center(a+0.9f*drand48(), 0.2, b+0.9f*drand48());
+            float chooseMat = gen.UniformFloat(0,1);
+
+            float r1 = gen.UniformFloat(0,1);
+            float r2 = gen.UniformFloat(0,1);
+            float r3 = gen.UniformFloat(0,1);
+            float r4 = gen.UniformFloat(0,1);
+            float r5 = gen.UniformFloat(0,1);
+            float r6 = gen.UniformFloat(0,1);
+            float r7 = gen.UniformFloat(0,1);
+            float r8 = gen.UniformFloat(0,1);
+            float r9 = gen.UniformFloat(0,1);
+            float r10 = gen.UniformFloat(0,1);
+            float r11 = gen.UniformFloat(0,1);
+            float r12 = gen.UniformFloat(0,1);
+            float r13 = gen.UniformFloat(0,1);
+            Vector3f center(a+0.9f*r1, 0.2, b+0.9f*r2);
             if((center - Vector3f(4,0.2, 0)).length() > 0.9){
                 if (chooseMat < 0.8){
                     list[i++] = new MovingSphere(center,
-                                                 center+Vector3f(0, 0.5f*drand48(), 0),
+                                                 center+Vector3f(0, 0.5f*r3, 0),
                                                  0, 1,
                                                  0.2,
-                                                 new Lambertian(new ConstantTexture(
-                                                         Vector3f(drand48()*drand48(),
-                                                                  drand48()*drand48(),
-                                                                  drand48()*drand48()))
-                                                 )
+                                                 new Lambertian(new ConstantTexture(Vector3f(r4*r5, r6*r7, r8*r9)))
                     );
                 }else if (chooseMat < 0.95) {
                     list[i++] = new Sphere(center,
                                            0.2,
-                                           new Metal(Vector3f(0.5f*(1 + drand48()),
-                                                              0.5f*(1 + drand48()),
-                                                              0.5f*(1 + drand48())),
-                                                     0.5f*drand48()));
+                                           new Metal(Vector3f(0.5f*(1 + r10), 0.5f*(1 + r11), 0.5f*(1 + r12)),0.5f*r13));
 
                 }else {
                     list[i++] = new Sphere(center, 0.2, new Dielectric(1.5));

@@ -88,6 +88,8 @@ float XZRectangle::pdfValue(const Vector3f& o, const Vector3f& v) const {
 }
 
 Vector3f XZRectangle::random(const Vector3f& o) const {
-    Vector3f randomPoint = Vector3f(x0 + drand48()*(x1-x0), k, z0 + drand48()*(z1-z0));
+    float r1 = gen.UniformFloat(0,1);
+    float r2 = gen.UniformFloat(0,1);
+    Vector3f randomPoint = Vector3f(x0 + r1*(x1-x0), k, z0 + r2*(z1-z0));
     return randomPoint - o;
 }

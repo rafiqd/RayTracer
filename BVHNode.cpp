@@ -8,7 +8,6 @@
 bool BVHNode::boundingBox(float t0, float t1, AABB &b) const {
     b = box;
     return true;
-
 }
 
 bool BVHNode::hit(const Ray &r, float tmin, float tmax, HitRecord &rec) const {
@@ -98,8 +97,9 @@ int boxXcmp(const void *a, const void *b){
     AABB boxLeft, boxRight;
     Hitable *ah = *(Hitable**)a;
     Hitable *bh = *(Hitable**)b;
-    if(!ah->boundingBox(0,0, boxLeft) || !bh->boundingBox(0,0, boxRight))
-        std::cerr << "no bounding box in BVHNode constructor\n";
+    if(!ah->boundingBox(0,0, boxLeft) || !bh->boundingBox(0,0, boxRight)){
+        std::cout << "no bounding box in BVHNode constructor\n";
+    }
     if ( boxLeft.min().x() - boxRight.min().x() < 0.0  )
         return -1;
     else
@@ -111,8 +111,10 @@ int boxYcmp(const void *a, const void *b){
     AABB box_left, box_right;
     Hitable *ah = *(Hitable**)a;
     Hitable *bh = *(Hitable**)b;
-    if(!ah->boundingBox(0,0, box_left) || !bh->boundingBox(0,0, box_right))
-        std::cerr << "no bounding box in bvh_node constructor\n";
+    if(!ah->boundingBox(0,0, box_left) || !bh->boundingBox(0,0, box_right)){
+
+        std::cout << "no bounding box in bvh_node constructor\n";
+    }
     if ( box_left.min().y() - box_right.min().y() < 0.0  )
         return -1;
     else
@@ -123,8 +125,9 @@ int boxZcmp(const void *a, const void *b){
     AABB boxLeft, boxRight;
     Hitable *ah = *(Hitable**)a;
     Hitable *bh = *(Hitable**)b;
-    if(!ah->boundingBox(0, 0, boxLeft) || !bh->boundingBox(0, 0, boxRight))
-        std::cerr << "no bounding box in BVHNode constructor\n";
+    if(!ah->boundingBox(0, 0, boxLeft) || !bh->boundingBox(0, 0, boxRight)){
+        std::cout << "no bounding box in BVHNode constructor\n";
+    }
     if ( boxLeft._min.z() - boxRight._min.z() < 0.0 )
         return -1;
     else

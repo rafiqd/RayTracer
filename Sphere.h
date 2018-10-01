@@ -11,8 +11,8 @@
 void getSphereUV(const Vector3f& p, float& u, float& v);
 
 inline Vector3f randomToSphere(float radius, float distanceSquared){
-    float r1 = drand48();
-    float r2 = drand48();
+    float r1 = gen.UniformFloat(0,1);
+    float r2 = gen.UniformFloat(0,1);
     float z = 1 + r2 * (sqrtf(1 - radius*radius/distanceSquared) - 1);
     float phi = 2*M_PI*r1;
     float x = cosf(phi)*sqrtf(1-z*z);

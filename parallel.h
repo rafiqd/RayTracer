@@ -10,6 +10,6 @@ void ParallelInit();
 void ParallelCleanup();
 void ParallelFor(std::function<void(int)> func, int count, int chunkSize);
 int NumSystemCores();
-
+void generate_random_nums(int tIndex);
 
 #endif //RENDERER_PARALLEL_H
