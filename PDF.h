@@ -19,7 +19,7 @@ public:
 class CosinePDF : public PDF {
 public:
     ONB uvw;
-
+    CosinePDF() = default;
     explicit CosinePDF(const Vector3f& w) { uvw.buildFromW(w); }
     float value(const Vector3f &direction) const override  {
         float cosine = dot(unit_vector(direction), uvw.w());

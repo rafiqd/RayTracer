@@ -18,6 +18,7 @@ public:
     bool isSpecular;
     Vector3f attenuation;
     PDF pdfPtr;
+    CosinePDF cospdf;
 };
 
 class Material {
@@ -128,7 +129,7 @@ public:
     bool scatter(const Ray& r_in, const HitRecord& hrec, ScatterRecord& srec) const override {
         srec.isSpecular = false;
         srec.attenuation = albedo->value(hrec.u, hrec.v, hrec.p);
-        srec.pdfPtr = CosinePDF(hrec.normal);
+        srec.cospdf = CosinePDF(hrec.normal);
         return true;
     }
 

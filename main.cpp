@@ -136,7 +136,7 @@ Vector3f color(const Ray& r, Hitable *world, Hitable *lightShape, int depth) {
                 return srec.attenuation * color(srec.SpecularRay, world, lightShape, depth+1);
             }else{
                 HitablePDF p0(*lightShape, rec.p);
-                MixturePDF p(p0, srec.pdfPtr);
+                MixturePDF p(p0, srec.cospdf);
                 Ray scattered = Ray(rec.p, p.generate(), r.time);
                 float pdf_val = p.value(scattered.direction());
                 float spdf = rec.matPtr->scattering_pdf(r, rec, scattered);

@@ -55,16 +55,12 @@ static void workerThreadFunc(int tIndex){
             loop.activeWorkers++;
             std::cout << "worker " << tIndex << " working on [" << indexStart << ", " << indexEnd << "]" << std::endl;
             lock.unlock();
-
-            //lock.lock();
-            //lock.unlock();
             for (int index = indexStart; index < indexEnd; ++index){
                 loop.func(index);
             }
 
             lock.lock();
             workedon[tIndex] += 1;
-            //std::cout << "worker " << tIndex << " done" << std::endl;
             loop.activeWorkers--;
             if (loop.Finished()){
                 workListCondition.notify_all();
@@ -102,6 +98,7 @@ void ParallelFor(std::function<void(int)> func, int count, int chunkSize){
         loop.activeWorkers++;
         if (indexStart != indexEnd){
             std::cout << "worker " << 0 << " working on [" << indexStart << ", " << indexEnd << "]" << std::endl;
+            workedon[0] += 1;
         }
         lock.unlock();
         for (int index = indexStart; index < indexEnd; ++index){
@@ -109,7 +106,6 @@ void ParallelFor(std::function<void(int)> func, int count, int chunkSize){
         }
         lock.lock();
 
-        workedon[0] += 1;
         loop.activeWorkers--;
     }
 
