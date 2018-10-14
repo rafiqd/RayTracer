@@ -118,7 +118,6 @@ int NumSystemCores() {
 void ParallelInit(){
     int nThreads = NumSystemCores();
     ThreadIndex = 0;
-
     for (int i = 0; i < nThreads - 1; ++i){
         seeds.push_back(i);
         threads.push_back(std::thread(workerThreadFunc, i+1));

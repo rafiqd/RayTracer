@@ -23,6 +23,8 @@ Vector3f randomInUnitDisk();
 Vector3f randomInUnitSphere();
 std::string render();
 Vector3f reflect(const Vector3f& v, const Vector3f& n);
+
+float calculateSD(float data[], int);
 inline Vector3f randomCosineDireciton(){
     float r1 = gen.UniformFloat(0,1);
     float r2 = gen.UniformFloat(0,1);
@@ -41,6 +43,7 @@ inline Vector3f deNan(const Vector3f& c){
     return temp;
 }
 extern Vector3f *output_img;
+extern float *depths;
 extern Camera *render_cam;
 extern Hitable *world;
 extern HitableList hlist;

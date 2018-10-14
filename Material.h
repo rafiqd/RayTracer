@@ -33,10 +33,19 @@ public:
 class DiffuseLight : public Material {
 public:
     Texture *emit;
-
     explicit DiffuseLight(Texture *a): emit(a) {}
-    bool scatter(const Ray& r_in, const HitRecord& rec, ScatterRecord& srec) const override {
-        return false;
+    bool scatter(const Ray& r_in, const HitRecord& hrec, ScatterRecord& srec) const override {
+        srec.isSpecular = false;
+        srec.attenuation = emit->value(hrec.u, hrec.v, hrec.p);
+        srec.cospdf = CosinePDF(hrec.normal);
+        return true;
+    }
+
+    float scattering_pdf(const Ray& r_in, const HitRecord& hrec, const Ray& scattered) const override {
+        float cosine = dot(hrec.normal, unit_vector(scattered.direction()));
+        if (cosine < 0)
+            return 0;
+        return cosine / M_PI;
     }
 
     Vector3f emitted(const Ray& r_in, const HitRecord& rec, float u, float v, const Vector3f& p) const override {

@@ -8,10 +8,11 @@
 
 #include "scenes.h"
 #include "parallel.h"
+#include "Parser.h"
 
 void threaded_render(int idx);
 std::string render_v2();
-
+Vector3f color2(const Ray& r, Hitable *world, Hitable *lightShape, int &depth);
 void parseSceneFile(const std::vector<std::string> &,
                     std::vector<Triangle>&,
                     std::vector<Light> &,
@@ -19,6 +20,7 @@ void parseSceneFile(const std::vector<std::string> &,
 
 
 Vector3f *output_img;
+float *depths;
 int *workedon;
 int nx;
 int ny;
@@ -32,19 +34,30 @@ int main(int argc, char **argv) {
     std::string filename(argv[argc - 1]);
     std::ifstream infile;
     infile.open(filename);
+    std::stringstream buffer;
+    buffer << infile.rdbuf();
+    infile.close();
+    nx = 500;
+    ny = 500;
+    ns = 100;
+
+    Camera *c;
+    Hitable *w;
+    Hitable *l;
+
+    //parse_pbrt_scene(buffer.str(), &l, &c, &w);
+
+
     std::vector<std::string> lines;
     std::string line;
 
-    nx = 500;
-    ny = 500;
-    ns = 500;
 
     output_img = new Vector3f[nx*ny];
+    depths = new float[nx*ny];
     workedon = new int[12];
     for (int i = 0; i < 12; ++i){
         workedon[i] = 0;
     }
-
     while(std::getline(infile, line)){
         lines.push_back(line);
     }
@@ -63,7 +76,7 @@ int main(int argc, char **argv) {
     int mint = int(dur) / 60;
     int sect = int(dur) % 60;
     std::cout << "time: " << mint << "m " << sect << "s" << std::endl;
-    std::ofstream outfile("E:/scenes/renderer/img.ppm");
+    std::ofstream outfile(filename);
     std::cout << "writing file" << std::endl;
     outfile << ppmImg << std::endl;
     std::cout << "done writing" << std::endl;
@@ -71,6 +84,12 @@ int main(int argc, char **argv) {
     for (int i = 0; i < 12; ++i){
         std::cout << "thread " << i << " worked on " << workedon[i] << " chunks" << std::endl;
     }
+    float sum = 0;
+    for (int i = 0; i < nx*ny; ++i){
+        sum += depths[i];
+    }
+    std::cout << "avg bounce depth: " << sum / (nx*ny) << std::endl;
+    std::cout << "stddev: " << calculateSD(depths, nx*ny) << std::endl;
     return 0;
 }
 
@@ -145,7 +164,6 @@ Vector3f color(const Ray& r, Hitable *world, Hitable *lightShape, int depth) {
                 }
                 Vector3f tcolor = color(scattered, world, lightShape, depth+1);
                 return emitted + srec.attenuation*spdf*tcolor / pdf_val;
-
             }
         }
         else
@@ -153,6 +171,87 @@ Vector3f color(const Ray& r, Hitable *world, Hitable *lightShape, int depth) {
     }
     else
         return Vector3f(0,0,0);
+}
+
+Vector3f color2(const Ray& r, Hitable *world, Hitable *lightShape, int &depth) {
+
+
+    Vector3f incoming_color(0,0,0);
+    Ray iter_ray = r;
+    int ptr = 0;
+    float threshhold = 0.25f;
+    int threshold_depth = 2;
+    Vector3f cumulative_val(std::nextafter(1.0f, 0.0f),std::nextafter(1.0f, 0.0f),std::nextafter(1.0f, 0.0f));
+    bool once = true;
+    while (depth < 50){
+        ++depth;
+
+        HitRecord rec;
+        if (!world->hit(iter_ray, 0.001, MAXFLOAT, rec)){
+            break;
+        }
+
+        ScatterRecord srec;
+        Vector3f emitted = rec.matPtr->emitted(iter_ray, rec, rec.u, rec.v, rec.p);
+        if (!(emitted ==  Vector3f(0,0,0))){
+            incoming_color += emitted * cumulative_val;
+        }
+        if(!rec.matPtr->scatter(iter_ray, rec, srec)){
+            //incoming_color = emitted;
+            break;
+        }
+
+
+        if(srec.isSpecular){
+            cumulative_val *= srec.attenuation;
+            iter_ray = srec.SpecularRay;
+            if (once){
+                threshold_depth = depth + 4;
+                once = false;
+            }
+//            float prob = std::max(cumulative_val.x(), std::max(cumulative_val.y(), cumulative_val.z()));
+
+//            if (depth > threshold_depth && gen.UniformFloat(0,1) < (1-prob)* threshhold ){
+//                break;
+//            }
+//          cumulative_val *= 1 / (1-prob);
+        }else{
+            HitablePDF p0(*lightShape, rec.p);
+            MixturePDF p(p0, srec.cospdf);
+            Ray scattered = Ray(rec.p, p.generate(), iter_ray.time);
+            float pdf_val = p.value(scattered.direction());
+
+
+            float spdf = rec.matPtr->scattering_pdf(iter_ray, rec, scattered);
+            if (pdf_val == 0 && spdf == 0){
+                pdf_val = 1;
+                spdf = 1;
+            }
+
+            cumulative_val *= srec.attenuation*spdf / pdf_val;
+            float max_val = std::max(cumulative_val.x(), std::max(cumulative_val.y(), cumulative_val.z()));
+            if (max_val < threshhold){
+                float prob = std::max(0.05f, (1-max_val));
+                if (depth > threshold_depth && gen.UniformFloat(0,1) < prob){
+                    break;
+                }
+
+                if ( depth > threshold_depth)
+                    cumulative_val /= prob;
+            }
+            iter_ray = scattered;
+        }
+    }
+
+    if (incoming_color == Vector3f(0,0,0)){
+        return Vector3f(0,0,0);
+    }
+
+//    for(int i = ptr-1; i >= 0; --i){
+//        emitted_val = incoming_col[i] * emitted_val;
+//    }
+
+    return incoming_color;
 }
 
 std::string render(){
@@ -182,7 +281,8 @@ std::string render(){
                 float u = (i + r1) / float(nx);
                 float v = (j + r2) / float(ny);
                 Ray r = render_cam->getRay(u, v);
-                Vector3f tcol = deNan(color(r, world, &hlist, 0));
+                int depth = 0;
+                Vector3f tcol = deNan(color2(r, world, &hlist, depth));
                 col += tcol;
             }
             col /= float(ns);
@@ -224,7 +324,6 @@ std::string render_v2(){
     }
     return ss.str();
 }
-
 void threaded_render(int idx){
     int row = idx / ny;
     row = (ny-1) - row;
@@ -232,130 +331,40 @@ void threaded_render(int idx){
 
     Vector3f rgbv(0, 0, 0);
 
+    float total_depth = 0;
     for (int s = 0; s < ns; s++) {
         float r1 = gen.UniformFloat(0,1);
         float r2 = gen.UniformFloat(0,1);
         float u = (col + r1) / float(nx);
         float v = (row + r2) / float(ny);
         Ray r = render_cam->getRay(u, v);
-        Vector3f tcol = deNan(color(r, world, &hlist, 0));
+        int depth = 0;
+        Vector3f tcol = deNan(color2(r, world, &hlist, depth));
+        total_depth += depth;
+        //Vector3f tcol = deNan(color(r, world, &hlist, 0));
         rgbv += tcol;
     }
+    depths[idx] =  total_depth / ns;
     rgbv /= float(ns);
     rgbv = Vector3f(sqrt(rgbv[0]), sqrt(rgbv[1]), sqrt(rgbv[2]));
     output_img[idx] = rgbv;
 }
 
-void parseSceneFile(const std::vector<std::string> &sceneDes,
-                    std::vector<Triangle> &geoList,
-                    std::vector<Light> &lightList,
-                    Camera** cam){
 
-    std::vector<Point3f> vertexList;
-    std::vector<Vector3f> textureList;
-    std::vector<Vector3f> normalList;
+float calculateSD(float data[], int num)
+{
+    float sum = 0.0, mean, standardDeviation = 0.0;
 
-    float x, y, z, x2, y2, z2, x3, y3, z3, x4, y4, z4;
-    std::string c;
-    char delim;
-    unsigned i = 0;
-    for(const auto &s: sceneDes){
-        std::stringstream sstream(s);
+    int i;
 
-        if(sstream >> c){
-            if(c == "light"){
-                std::string name;
-                float intensity, r, g, b, tx, ty, tz, sx, sy, sz, rx, ry, rz;
-                if(sstream >> intensity >> r >> g >> b >> tx >> ty >> tz >> sx >> sy >> sz >> rx >> ry >> rz){
-                    Light l = Light(name,
-                          intensity,
-                          r,g,b,
-                          tx,ty,tz,
-                          rx,ry,rz,
-                          sx,sy,sz);
-                    lightList.push_back(l);
-                }
-            }
-
-            if(c == "cam"){
-                float tx, ty, tz, sx, sy, sz, rx, ry, rz, focalLength;
-                if(sstream >> tx >> ty >> tz >> sx >> sy >> sz >> rx >> ry >> rz >> focalLength){
-
-//                    *cam = new Camera(Vector3f(tx, ty, tz),
-//                                      Vector3f(rx, ry, rz),
-//                                      Vector3f(sx, sy, sz), focalLength, 90, float(nx)/float(ny));
-                }
-            }
-
-            if(c == "v"){
-                if(sstream >> x >> y >> z){
-                    vertexList.emplace_back(Point3f(x, y, z));
-                }
-            }
-            if(c == "vt"){
-                if(sstream >> x >> y){
-                    textureList.emplace_back(Vector3f(x, y, 0));
-                }
-            }
-            if(c == "vn"){
-                if(sstream >> x >> y >> z){
-                    normalList.emplace_back(Vector3f(x, y, z));
-                }
-            }
-            if(c == "f"){
-                if(sstream >> x >> delim >> x2 >> delim >> x3
-                           >> y >> delim >> y2 >> delim >> y3
-                           >> z >> delim >> z2 >> delim >> z3){
-
-                    if(sstream >> x4 >> delim >> y4 >> delim >> z4){
-
-                        Point3f p1 = vertexList[x];
-                        Point3f p2 = vertexList[y];
-                        Point3f p3 = vertexList[z];
-                        Point3f p4 = vertexList[x4];
-
-                        Triangle tri1 = Triangle(p1, p2, p3,
-                                                 textureList[x2], textureList[y2], textureList[z2],
-                                                 normalList[x3], normalList[y3], normalList[z3]);
-
-                        geoList.push_back(tri1);
-
-                        if(p4.x != p1.x && p4.x != p1.y && p4.x != p1.z &&
-                                p4.y != p1.x && p4.y != p1.y && p4.y != p1.z &&
-                                p4.z != p1.x && p4.z != p1.y && p4.z != p1.z){
-                            Triangle tri2 = Triangle(p4, p2, p3,
-                                                     textureList[y2], textureList[z2], textureList[y4],
-                                                     normalList[y3], normalList[z3], normalList[z4]);
-                            geoList.push_back(tri2);
-                        }else if(p4.x != p2.x && p4.x != p2.y && p4.x != p2.z &&
-                                 p4.y != p2.x && p4.y != p2.y && p4.y != p2.z &&
-                                 p4.z != p2.x && p4.z != p2.y && p4.z != p2.z){
-
-                            Triangle tri2 = Triangle(p4, p1, p3,
-                                                     textureList[x2], textureList[z2], textureList[y4],
-                                                     normalList[x3], normalList[z3], normalList[z4]);
-                            geoList.push_back(tri2);
-                        }else{
-                            Triangle tri2 = Triangle(p4, p1, p2,
-                                                     textureList[x2], textureList[y2], textureList[y4],
-                                                     normalList[x3], normalList[y3], normalList[z4]);
-                            geoList.push_back(tri2);
-                        }
-
-
-
-                    }else{
-
-                        Triangle tri = Triangle(vertexList[x], vertexList[y], vertexList[z],
-                                 textureList[x2], textureList[y2], textureList[z2],
-                                 normalList[x3], normalList[y3], normalList[z3]);
-                        geoList.push_back(tri);
-                    }
-              }
-            }
-        }
-
-
+    for(i = 0; i < num; ++i)
+    {
+        sum += data[i];
     }
-}
 
+    mean = sum/num;
+    for(i = 0; i < num; ++i)
+        standardDeviation += pow(data[i] - mean, 2);
+
+    return sqrt(standardDeviation / num);
+}
