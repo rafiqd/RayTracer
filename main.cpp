@@ -8,7 +8,7 @@
 
 #include "scenes.h"
 #include "parallel.h"
-#include "Parser.h"
+#include "parsing/Parser.h"
 
 void threaded_render(int idx);
 std::string render_v2();
@@ -39,18 +39,14 @@ int main(int argc, char **argv) {
     infile.close();
     nx = 500;
     ny = 500;
-    ns = 100;
+    ns = 25;
 
     Camera *c;
     Hitable *w;
     Hitable *l;
 
-    //parse_pbrt_scene(buffer.str(), &l, &c, &w);
-
-
     std::vector<std::string> lines;
     std::string line;
-
 
     output_img = new Vector3f[nx*ny];
     depths = new float[nx*ny];
@@ -302,14 +298,14 @@ std::string render_v2(){
     std::stringstream ss;
     ss << "P3\n" << nx << " " << ny << "\n255\n";
 
-    cornell_box_v2(&world, &render_cam, float(nx)/float(ny));
-
-    Hitable* lightShape = new XZRectangle(213, 343, 227, 332, 554, nullptr);
-    Hitable* glassSphere = new Sphere(Vector3f(190, 90, 190), 90, nullptr);
-    Hitable *a[2];
-    a[0] = lightShape;
-    a[1] = glassSphere;
-    hlist = HitableList(a,2);
+    //cornell_box_v2(&world, &render_cam, float(nx)/float(ny));
+    test_scene(&world, &render_cam, float(nx)/float(ny));
+    //Hitable* lightShape = new XZRectangle(213, 343, 227, 332, 554, nullptr);
+    Hitable* glassSphere = new Sphere(Vector3f(0,0,0), 10000, nullptr);
+    Hitable *a[1];
+    //a[0] = lightShape;
+    a[0] = glassSphere;
+    hlist = HitableList(a,1);
 
     int chunkSize =  ((nx * ny) / 11) / 8;
     ParallelInit();

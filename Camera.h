@@ -76,9 +76,7 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream &out, const Camera &t){
-        out << "Camera([" << t.translate[0] << ", " << t.translate[1] << ", " << t.translate[2] << "]\n["
-                << t.rotate[0] << ", " << t.rotate[1] << ", " << t.rotate[2] << "]\n["
-                << t.scale[0] << ", " << t.scale[1] << ", " << t.scale[2] << "]," << t.focalLength << ")" ;
+        out << "Camera([ origin: " << t.origin << " looking to: " << t.w <<  " )" ;
         return out;
     }
 

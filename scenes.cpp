@@ -4,6 +4,27 @@
 
 #include "scenes.h"
 
+
+void test_scene(Hitable **scene, Camera **cam, float aspect){
+
+    Material *white = new Lambertian( new ConstantTexture(Vector3f(0.73, 0.73, 0.73)) );
+    Hitable **list = new Hitable*[8];
+    int i = 0;
+    Material *glass = new Dielectric(1.5);
+    list[i++] = new FlipNormals(new Sphere(Vector3f(0,0,0),1, glass));
+    list[i++] = new FlipNormals(new XZRectangle(-20, 20, -20, 20, 20, white));
+    Material *l = new DiffuseLight(new ConstantTexture(Vector3f(0.4, 0.45, 0.5)));
+    list[i++] = new FlipNormals(new Sphere(Vector3f(0,0,0), 10000, l));
+    *scene = new BVHNode(list, i, 0, 1);
+    Vector3f lookfrom{3, 4, 1.5};
+    Vector3f lookat{0.5, 0.5, 0};
+    Vector3f vup{0, 0, 1};
+    float vfov = 80.0;
+    float aperture = 0.00;
+    float distToFocus = 10;
+    *cam = new Camera(lookfrom, lookat, vup, vfov, aspect, aperture, distToFocus, 0.0, 1.0);
+}
+
 void cornell_box_v2(Hitable **scene, Camera **cam, float aspect){
 
     int i = 0;

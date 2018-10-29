@@ -20,6 +20,7 @@ Hitable *two_perlin_spheres();
 Hitable *two_spheres();
 Hitable* randomScene();
 void cornell_box_v2(Hitable **scene, Camera **cam, float aspect);
+void test_scene(Hitable **scene, Camera **cam, float aspect);
 
 
 #endif //RENDERER_SCENES_H

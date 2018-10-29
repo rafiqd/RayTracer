@@ -45,7 +45,7 @@ public:
     inline void make_unit_vector();
 
     friend inline std::ostream& operator<<(std::ostream &os, const Vector3f v){
-        return os << v[0] << " " << v[1] << " " << v[2];
+        return os << "[" << v[0] << ", " << v[1] << ", " << v[2] << "]";
     }
 
     friend inline std::istream& operator>>(std::istream &is, Vector3f &t){
