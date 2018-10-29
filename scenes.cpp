@@ -25,7 +25,7 @@ void test_scene(Hitable **scene, Camera **cam, float aspect){
     *cam = new Camera(lookfrom, lookat, vup, vfov, aspect, aperture, distToFocus, 0.0, 1.0);
 }
 
-void cornell_box_v2(Hitable **scene, Camera **cam, float aspect){
+void cornell_box_v2(Hitable **scene, Camera **cam, float aspect, HitableList **MiS_objs){
 
     int i = 0;
     Hitable **list = new Hitable*[8];
@@ -51,6 +51,12 @@ void cornell_box_v2(Hitable **scene, Camera **cam, float aspect){
     float aperture = 0.00;
     float vfov = 40.0;
     *cam = new Camera(lookfrom, lookat, Vector3f(0,1,0), vfov, aspect, aperture, distToFocus, 0.0, 1.0);
+
+    //Hitable *a[2];
+    auto **a = new Hitable*[2];
+    a[0] = new XZRectangle(213, 343, 227, 332, 554, nullptr);
+    a[1] = new Sphere(Vector3f(190, 90, 190), 90, nullptr);
+    *MiS_objs = new HitableList(a,2);
 }
 
 Hitable* cornell_box(){

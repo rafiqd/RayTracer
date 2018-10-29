@@ -222,8 +222,8 @@ parse_sampler(TokenList &tokenList){
         throw ParsingException(ss.str());
     }
 
-    int pixel_samples = std::atoi(t->getValue().c_str());
-    std::cout << 'pixel samples ' << pixel_samples << std::endl;
+    auto pixel_samples = static_cast<int>(std::atoi(t->getValue().c_str()));
+    std::cout << "pixel samples " << pixel_samples << std::endl;
     // TODO: implement different samplers
 }
 

@@ -5,6 +5,7 @@
 #ifndef RENDERER_PDF_H
 #define RENDERER_PDF_H
 
+#include "Core.h"
 #include "Vector3f.h"
 #include "ONB.h"
 #include "main.h"

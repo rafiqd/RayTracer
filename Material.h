@@ -10,6 +10,7 @@
 #include "Texture.h"
 #include "main.h"
 #include "ONB.h"
+#include "Core.h"
 #include "PDF.h"
 
 class ScatterRecord {
