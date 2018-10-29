@@ -2,7 +2,7 @@
 
 Physically Based Renderer based on "Physically Based Rendering" and Peter Shirley's Books
 
-I work on this in my off time on the weekends mostly, the goal is to implement various rendering techniques in the 
+I work on this in my off time on weekends mostly, the goal is to implement various rendering techniques in the 
 book "Physically Based Rendering" and SIGGRAPH papers to better understand them.
 
 ## Example Output
