@@ -1,4 +1,4 @@
-# RayTracer
+# Physically Based Ray Tracer
 
 Physically Based Renderer based on "Physically Based Rendering" and Peter Shirley's Books
 
