@@ -6,7 +6,9 @@ I work on this in my off time on the weekends mostly, the goal is to implement v
 book "Physically Based Rendering" and SIGGRAPH papers to better understand them.
 
 ## Example Output
-`Render Time:` 1m 42s on 11 Cores on an i7 8700k @ 4.7Ghz
+![alt text](https://github.com/rafiqd/RayTracer/blob/master/cornell_100spp.png)
+
+`Render Time (100SPP):` 1m 42s on 11 Cores on an i7 8700k @ 4.7Ghz
 
 ## Currently implements:
 * Multithreaded Rendering
